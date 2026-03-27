@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kuza Ledger — Trust-Based Work & Settlement</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #0a0f1e;
+      --paper: #f5f0e8;
+      --paper-dark: #ede7d9;
+      --green: #1a6b3c;
+      --green-light: #2d9d5e;
+      --amber: #c9610a;
+      --amber-light: #f28c3a;
+      --red: #b91c1c;
+      --cyan: #0891b2;
+      --rule: rgba(10,15,30,0.12);
+      --serif: 'DM Serif Display', Georgia, serif;
+      --mono: 'DM Mono', monospace;
+      --sans: 'Outfit', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    /* ─── NOISE TEXTURE OVERLAY ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 999;
+      opacity: 0.5;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      background: var(--ink);
+      color: var(--paper);
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 1;
+    }
+
+    .header-left {
+      padding: 5rem 4rem 4rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid rgba(245,240,232,0.1);
+    }
+
+    .header-right {
+      padding: 5rem 4rem 4rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      position: relative;
+    }
+
+    .wordmark {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(245,240,232,0.5);
+      margin-bottom: 3rem;
+    }
+
+    .hero-title {
+      font-family: var(--serif);
+      font-size: clamp(3rem, 6vw, 5.5rem);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-title em {
+      font-style: italic;
+      color: var(--amber-light);
+    }
+
+    .header-meta {
+      margin-top: auto;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border: 1px solid rgba(245,240,232,0.2);
+      border-radius: 100px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(245,240,232,0.6);
+      margin-bottom: 2rem;
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--amber-light);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero-desc {
+      font-size: 1.05rem;
+      font-weight: 300;
+      color: rgba(245,240,232,0.75);
+      max-width: 480px;
+      line-height: 1.7;
+    }
+
+    /* big decorative ledger lines */
+    .ledger-art {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .ledger-art::before {
+      content: '';
+      position: absolute;
+      top: 3rem; bottom: 3rem; right: 4rem;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, rgba(245,240,232,0.08) 20%, rgba(245,240,232,0.08) 80%, transparent);
+    }
+
+    .big-number {
+      position: absolute;
+      bottom: 3rem;
+      right: 4rem;
+      font-family: var(--serif);
+      font-size: clamp(8rem, 18vw, 18rem);
+      color: rgba(245,240,232,0.04);
+      line-height: 1;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .header-tagline {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: rgba(245,240,232,0.35);
+      letter-spacing: 0.05em;
+      margin-bottom: 1.5rem;
+    }
+
+    .vis-credit {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: rgba(245,240,232,0.3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .scroll-cue {
+      padding: 1.5rem 4rem;
+      border-top: 1px solid rgba(245,240,232,0.08);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(245,240,232,0.3);
+    }
+
+    .scroll-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, rgba(245,240,232,0.15), transparent);
+    }
+
+    /* ─── SECTIONS ─── */
+    .section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 6rem 2rem;
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      max-width: 60px;
+      height: 1px;
+      background: var(--amber);
+      opacity: 0.4;
+    }
+
+    .section-title {
+      font-family: var(--serif);
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 2rem;
+      max-width: 700px;
+    }
+
+    /* ─── PROBLEM BLOCK ─── */
+    .problem-block {
+      background: var(--ink);
+      color: var(--paper);
+      border-radius: 4px;
+      padding: 3rem 3.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .problem-block::before {
+      content: '"';
+      position: absolute;
+      top: -1rem;
+      left: 2rem;
+      font-family: var(--serif);
+      font-size: 12rem;
+      color: rgba(245,240,232,0.04);
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .problem-text {
+      font-family: var(--serif);
+      font-size: clamp(1.3rem, 2.5vw, 1.9rem);
+      line-height: 1.4;
+      font-style: italic;
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+    }
+
+    .problem-accent {
+      color: var(--amber-light);
+    }
+
+    /* ─── FLOW / STEPS ─── */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 3rem;
+    }
+
+    .flow-step {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      border-bottom: 1px solid var(--rule);
+      transition: background 0.2s;
+    }
+
+    .flow-step:last-child { border-bottom: none; }
+    .flow-step:hover { background: rgba(10,15,30,0.03); }
+
+    .step-number {
+      padding: 2rem;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: rgba(10,15,30,0.25);
+      border-right: 1px solid var(--rule);
+      display: flex;
+      align-items: flex-start;
+      padding-top: 2.2rem;
+    }
+
+    .step-body {
+      padding: 2rem 2.5rem;
+    }
+
+    .step-tag {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink);
+      opacity: 0.4;
+      margin-bottom: 0.4rem;
+    }
+
+    .step-title {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .step-desc {
+      font-size: 0.95rem;
+      color: rgba(10,15,30,0.65);
+      font-weight: 300;
+      max-width: 600px;
+    }
+
+    .step-highlight {
+      background: var(--green);
+      color: var(--paper);
+    }
+
+    .step-highlight:hover {
+      background: var(--green);
+      filter: brightness(1.05);
+    }
+
+    .step-highlight .step-number {
+      border-right-color: rgba(245,240,232,0.15);
+      color: rgba(245,240,232,0.4);
+    }
+
+    .step-highlight .step-tag { color: rgba(245,240,232,0.5); opacity: 1; }
+    .step-highlight .step-title { color: var(--paper); }
+    .step-highlight .step-desc { color: rgba(245,240,232,0.8); }
+
+    /* ─── TWO-COL INFO BLOCKS ─── */
+    .info-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 4rem;
+    }
+
+    .info-card {
+      padding: 2.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--rule);
+    }
+
+    .info-card.cyan-card {
+      background: #ecfeff;
+      border-color: var(--cyan);
+      border-left-width: 3px;
+    }
+
+    .info-card.amber-card {
+      background: #fff7ed;
+      border-color: var(--amber);
+      border-left-width: 3px;
+    }
+
+    .info-card-label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .cyan-card .info-card-label { color: var(--cyan); }
+    .amber-card .info-card-label { color: var(--amber); }
+
+    .info-card-title {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .info-card-text {
+      font-size: 0.95rem;
+      font-weight: 300;
+      color: rgba(10,15,30,0.7);
+      line-height: 1.7;
+    }
+
+    /* ─── DIVIDER ─── */
+    .rule-divider {
+      border: none;
+      border-top: 1px solid var(--rule);
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--ink);
+      color: var(--paper);
+      padding: 4rem 2rem;
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 2rem;
+    }
+
+    .footer-wordmark {
+      font-family: var(--serif);
+      font-size: 1.6rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .footer-note {
+      font-size: 0.88rem;
+      font-weight: 300;
+      color: rgba(245,240,232,0.55);
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    .footer-meta {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(245,240,232,0.25);
+      text-align: right;
+    }
+
+    /* ─── SCROLL PROGRESS BAR ─── */
+    .progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      width: 0%;
+      background: linear-gradient(to right, var(--amber), var(--amber-light));
+      z-index: 1000;
+      transition: width 0.1s linear;
+    }
+
+    /* ─── STICKY MOBILE NAV ─── */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: rgba(10,15,30,0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 1rem 1.5rem;
+      z-index: 998;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(245,240,232,0.08);
+      transform: translateY(-100%);
+      transition: transform 0.3s ease;
+    }
+
+    .mobile-nav.visible { transform: translateY(0); }
+
+    .mobile-nav-wordmark {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      color: var(--paper);
+    }
+
+    .mobile-nav-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(245,240,232,0.45);
+    }
+
+    /* ─── FLOW STEP HOVER ENHANCEMENTS ─── */
+    .flow-step { position: relative; }
+
+    .flow-step::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--amber);
+      transform: scaleY(0);
+      transform-origin: bottom;
+      transition: transform 0.25s ease;
+    }
+
+    .flow-step:hover::before { transform: scaleY(1); }
+    .flow-step.step-highlight::before { background: var(--green-light); }
+    .flow-step .step-title { transition: color 0.2s; }
+    .flow-step:hover .step-title { color: var(--amber); }
+    .flow-step.step-highlight:hover .step-title { color: rgba(245,240,232,1); }
+
+    @media (max-width: 768px) {
+      .mobile-nav { display: flex; }
+      .header-left { padding-top: 5rem; }
+    }
+
+    /* ─── ANIMATIONS ─── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      .header-grid { grid-template-columns: 1fr; }
+      .header-left { padding: 3rem 1.5rem 2rem; border-right: none; border-bottom: 1px solid rgba(245,240,232,0.1); }
+      .header-right { padding: 2rem 1.5rem 3rem; }
+      .big-number { font-size: 8rem; }
+      .scroll-cue { padding: 1.5rem; }
+      .section { padding: 4rem 1.5rem; }
+      .problem-block { padding: 2rem; }
+      .flow-step { grid-template-columns: 56px 1fr; }
+      .info-pair { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr; }
+      .footer-meta { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── SCROLL PROGRESS BAR ─── -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ─── STICKY MOBILE NAV ─── -->
+<nav class="mobile-nav" id="mobileNav">
+  <div class="mobile-nav-wordmark">Kuza Ledger</div>
+  <div class="mobile-nav-pill">
+    <span class="status-dot" style="width:5px;height:5px;"></span>
+    Alpha · 2026
+  </div>
+</nav>
+
+<!-- ─── HEADER ─── -->
+<header>
+  <div class="header-grid">
+    <div class="header-left">
+      <div class="wordmark">Kuza Ledger — Alpha</div>
+      <div>
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          Status: Alpha / Work in Progress
+        </div>
+        <h1 class="hero-title">
+          Work that<br>
+          <em>moves forward</em><br>
+          without cash.
+        </h1>
+      </div>
+      <div class="header-meta">
+        <div class="header-tagline">African Leadership University · VIS Project</div>
+        <div class="vis-credit">Virtual Internship Simulation · 2025</div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="ledger-art"></div>
+      <div class="big-number">KL</div>
+      <p class="hero-desc">
+        A trust-based work and settlement system that keeps jobs moving
+        when cash and conventional digital payments are unreliable.
+      </p>
+    </div>
+  </div>
+
+  <div class="scroll-cue">
+    <span>Scroll to explore</span>
+    <div class="scroll-line"></div>
+  </div>
+</header>
+
+<!-- ─── THE PROBLEM ─── -->
+<section class="section fade-in">
+  <div class="section-label">The Problem</div>
+  <div class="problem-block">
+    <p class="problem-text">
+      Jobs exist across communities, but they often collapse when cash is scarce
+      or digital payments are mistrusted. Work is delayed or abandoned — not because
+      <span class="problem-accent">labor or demand is missing,</span>
+      but because the exchange of value breaks down.
+    </p>
+  </div>
+</section>
+
+<hr class="rule-divider">
+
+<!-- ─── HOW IT WORKS ─── -->
+<section class="section fade-in">
+  <div class="section-label">The Solution</div>
+  <h2 class="section-title">How Kuza Ledger works</h2>
+
+  <div class="flow-grid">
+    <div class="flow-step">
+      <div class="step-number">01</div>
+      <div class="step-body">
+        <div class="step-tag">Onboarding</div>
+        <div class="step-title">Trust-Based Entry</div>
+        <p class="step-desc">
+          Workers and employers are verified by trusted community agents using
+          local recognition and social proof — no cash or digital payment required.
+        </p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-number">02</div>
+      <div class="step-body">
+        <div class="step-tag">Execution</div>
+        <div class="step-title">Work Happens</div>
+        <p class="step-desc">
+          Jobs and services are carried out as agreed, even when immediate payment
+          is unavailable. The system doesn't pause for liquidity.
+        </p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-number">03</div>
+      <div class="step-body">
+        <div class="step-tag">Value Capture</div>
+        <div class="step-title">Work Credits Issued</div>
+        <p class="step-desc">
+          Completed work is recorded as credits (IOUs) in a community trust ledger,
+          capturing value instead of losing it.
+        </p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-number">04</div>
+      <div class="step-body">
+        <div class="step-tag">Governance</div>
+        <div class="step-title">Risk Containment</div>
+        <p class="step-desc">
+          Credit limits, time-bound credits, and transparent oversight prevent
+          abuse and runaway debt within the community.
+        </p>
+      </div>
+    </div>
+
+    <div class="flow-step step-highlight">
+      <div class="step-number">05</div>
+      <div class="step-body">
+        <div class="step-tag">Resolution</div>
+        <div class="step-title">Anchored Settlement</div>
+        <p class="step-desc">
+          Pre-identified buyers, SMEs, cooperatives, or institutions periodically
+          settle accumulated credits with cash once liquidity becomes available.
+        </p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-number">06</div>
+      <div class="step-body">
+        <div class="step-tag">Outcome</div>
+        <div class="step-title">Workers Get Paid</div>
+        <p class="step-desc">
+          Workers receive payment, employers keep operating, and jobs continue
+          even during cash shortages. The community economic cycle holds.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info cards -->
+  <div class="info-pair">
+    <div class="info-card cyan-card fade-in">
+      <div class="info-card-label">Liquidity Resolution</div>
+      <h3 class="info-card-title">How value converts to cash</h3>
+      <p class="info-card-text">
+        Kuza Ledger does not assume cash is available at the moment of work.
+        Value is recorded and pooled, then converted into cash through anchored
+        settlement partners during scheduled settlement cycles.
+      </p>
+    </div>
+
+    <div class="info-card amber-card fade-in">
+      <div class="info-card-label">The Tradeoff</div>
+      <h3 class="info-card-title">Trust risk for job continuity</h3>
+      <p class="info-card-text">
+        This system accepts higher trust management and verification risk in
+        exchange for job continuity when conventional payment systems fail.
+        The community is the collateral.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-wordmark">Kuza Ledger</div>
+      <p class="footer-note">
+        This venture concept was developed as part of the Virtual Internship
+        Simulation (VIS) at African Leadership University. Feedback and
+        connections are welcome.
+      </p>
+    </div>
+    <div class="footer-meta">
+      <div style="font-family: 'DM Serif Display', Georgia, serif; font-size: 1.1rem; color: rgba(245,240,232,0.75); letter-spacing: 0.01em; text-transform: none; margin-bottom: 0.5rem;">Imena Fleury</div>
+      Alpha · 2026<br>
+      African Leadership<br>
+      University
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Scroll progress bar
+  const progressBar = document.getElementById('progressBar');
+  const mobileNav = document.getElementById('mobileNav');
+  const headerHeight = document.querySelector('header').offsetHeight;
+
+  window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    progressBar.style.width = pct + '%';
+
+    // Show mobile nav after scrolling past header
+    if (scrollTop > headerHeight * 0.6) {
+      mobileNav.classList.add('visible');
+    } else {
+      mobileNav.classList.remove('visible');
+    }
+  });
+
+  // Scroll-triggered fade-ins
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
